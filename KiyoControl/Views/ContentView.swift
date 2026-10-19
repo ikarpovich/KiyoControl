@@ -40,16 +40,31 @@ struct ContentView: View {
         // runs this one, so a rapid sequence of switches collapses
         // to "detach prior, attach latest" with the intermediate
         // attaches superseded.
-        .task(id: manager.selectedDevice?.avDevice?.uniqueID) {
+        .task(id: previewConfigurationToken) {
             if let device = manager.selectedDevice?.avDevice {
                 await preview.attach(device: device,
-                                     quality: settings.cameraPreviewQuality)
+                                     quality: settings.cameraPreviewQuality,
+                                     hdrEnabled: selectedCameraHDREnabled)
             } else {
                 await preview.detach()
             }
         }
         .frame(width: settings.cameraPreviewSize.getWidth())
         .fixedSize(horizontal: true, vertical: false)
+    }
+
+    // HDR is session state on the Kiyo Pro: changing HDR or its exposure
+    // mode must restart the preview, and HDR requires a 30 fps capture.
+    private var previewConfigurationToken: String {
+        let deviceID = manager.selectedDevice?.avDevice?.uniqueID ?? "none"
+        let hdr = manager.selectedDevice?.controller?.kiyoProSettings?.hdrEnabled
+            .map { $0 ? "on" : "off" } ?? "unset"
+        let mode = manager.selectedDevice?.controller?.kiyoProSettings?.hdrMode?.rawValue ?? "unset"
+        return "\(deviceID)|\(hdr)|\(mode)"
+    }
+
+    private var selectedCameraHDREnabled: Bool {
+        manager.selectedDevice?.controller?.kiyoProSettings?.hdrEnabled == true
     }
 
     @ViewBuilder

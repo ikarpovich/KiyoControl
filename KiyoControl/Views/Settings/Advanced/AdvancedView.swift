@@ -94,6 +94,13 @@ private struct KiyoProSettingsSection: View {
             }
             .disabled(settings.isApplying)
 
+            Text("HDR runs at up to 30 fps. The preview restarts when HDR settings change.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            Text("Dark/Bright mode only affects the image while HDR is on.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+
             Picker("Field of View", selection: Binding(
                 get: { settings.fieldOfView },
                 set: { settings.selectFieldOfView($0) }
