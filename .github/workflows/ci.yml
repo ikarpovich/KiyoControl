@@ -48,3 +48,29 @@ jobs:
           -destination 'platform=macOS,arch=arm64'
           -derivedDataPath "$RUNNER_TEMP/DerivedData"
           CODE_SIGNING_ALLOWED=NO
+
+      - name: Build release app
+        run: >-
+          xcodebuild build
+          -project KiyoControl.xcodeproj
+          -scheme KiyoControl
+          -configuration Release
+          -destination 'platform=macOS,arch=arm64'
+          -derivedDataPath "$RUNNER_TEMP/ReleaseDerivedData"
+          CODE_SIGNING_ALLOWED=NO
+
+      - name: Package release app
+        if: github.event_name != 'pull_request'
+        run: >-
+          ditto -c -k --sequesterRsrc --keepParent
+          "$RUNNER_TEMP/ReleaseDerivedData/Build/Products/Release/KiyoControl.app"
+          "$RUNNER_TEMP/KiyoControl-macOS-arm64.zip"
+
+      - name: Upload release app artifact
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: KiyoControl-macOS-arm64
+          path: ${{ runner.temp }}/KiyoControl-macOS-arm64.zip
+          if-no-files-found: error
+          retention-days: 30
