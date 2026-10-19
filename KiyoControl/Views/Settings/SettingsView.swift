@@ -60,12 +60,16 @@ struct SettingsView: View {
         case .basic:
             if let controller = manager.selectedDevice?.controller {
                 BasicSettings(controller: controller)
+            } else if manager.selectedDevice?.isLoadingControls == true {
+                loadingCameraControlsView()
             } else {
                 UnsupportedView()
             }
         case .advanced:
             if let controller = manager.selectedDevice?.controller {
                 AdvancedView(controller: controller)
+            } else if manager.selectedDevice?.isLoadingControls == true {
+                loadingCameraControlsView()
             } else {
                 UnsupportedView()
             }
@@ -74,6 +78,16 @@ struct SettingsView: View {
         case .settings:
             PreferencesView()
         }
+    }
+
+    private func loadingCameraControlsView() -> some View {
+        VStack(spacing: 8) {
+            ProgressView()
+            Text("Loading camera controls…")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
