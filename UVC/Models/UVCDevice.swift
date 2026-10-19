@@ -1,6 +1,6 @@
 //
 //  UCDevice.swift
-//  CameraController
+//  KiyoControl
 //
 //  Created by Itay Brenner on 7/19/20.
 //  Copyright © 2020 Itaysoft. All rights reserved.
@@ -19,7 +19,7 @@ public final class UVCDevice {
     public let productID: UInt16
     public let extensionUnits: [ExtensionUnit]
     public let properties: UVCDeviceProperties
-    public let logitechBrio: LogitechBrioDeviceProperties?
+    public let razerKiyoPro: RazerKiyoProDeviceProperties?
 
     public init(device: AVCaptureDevice) throws {
         let deviceInfo = try device.usbDevice()
@@ -32,15 +32,11 @@ public final class UVCDevice {
         extensionUnits = deviceInfo.descriptor.extensionUnits
         properties = UVCDeviceProperties(deviceInfo)
 
-        if LogitechVendor.isLogitech(vendorID: deviceInfo.vendorID) {
-            logitechBrio = LogitechBrioDeviceProperties(deviceInfo)
+        if RazerVendor.isKiyoPro(vendorID: deviceInfo.vendorID, productID: deviceInfo.productID) {
+            razerKiyoPro = RazerKiyoProDeviceProperties(deviceInfo)
         } else {
-            logitechBrio = nil
+            razerKiyoPro = nil
         }
-
-        #if DEBUG
-        logitechBrio?.probeAllSelectorsInBackground()
-        #endif
     }
 
     deinit { _ = interface.pointee.pointee.Release(interface) }

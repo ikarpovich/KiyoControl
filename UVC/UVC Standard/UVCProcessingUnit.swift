@@ -1,6 +1,6 @@
 //
 //  UVCProcessingUnitConstants.swift
-//  CameraController
+//  KiyoControl
 //
 //  Created by Itay Brenner on 7/19/20.
 //  Copyright © 2020 Itaysoft. All rights reserved.

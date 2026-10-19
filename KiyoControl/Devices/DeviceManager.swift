@@ -1,0 +1,94 @@
+//
+//  DeviceManager.swift
+//  KiyoControl
+//
+//  Created by Itay Brenner on 7/19/20.
+//  Copyright © 2020 Itaysoft. All rights reserved.
+//
+
+import Foundation
+import Observation
+import AVFoundation
+
+@MainActor
+@Observable
+final class DevicesManager {
+    static let shared = DevicesManager()
+
+    @ObservationIgnored private let deviceMonitor = DeviceMonitor()
+
+    var devices: [CaptureDevice] = []
+
+    var selectedDevice: CaptureDevice? {
+        willSet {
+            if newValue != nil && selectedDevice != newValue {
+                UserSettings.shared.lastSelectedDevice = newValue?.avDevice?.uniqueID
+            }
+            deviceMonitor.updateDevice(newValue)
+        }
+    }
+
+    private init() {
+        let session = AVCaptureDevice.DiscoverySession(deviceTypes: [.external, .builtInWideAngleCamera],
+                                                                mediaType: nil,
+                                                                position: .unspecified)
+        devices = session.devices.map({ (device) -> CaptureDevice in
+            CaptureDevice(avDevice: device)
+        })
+
+        if let deviceId = UserSettings.shared.lastSelectedDevice {
+            selectedDevice = devices.first { (device) -> Bool in
+                device.avDevice?.uniqueID == deviceId
+            }
+        }
+    }
+
+    func startMonitoring() {
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(deviceAdded(notif:)),
+                                               name: AVCaptureDevice.wasConnectedNotification,
+                                               object: nil)
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(deviceRemoved(notif:)),
+                                               name: AVCaptureDevice.wasDisconnectedNotification,
+                                               object: nil)
+    }
+
+    func stopMonitoring() {
+        NotificationCenter.default.removeObserver(self,
+                                                  name: AVCaptureDevice.wasConnectedNotification,
+                                                  object: nil)
+    }
+
+    @objc
+    func deviceAdded(notif: NSNotification) {
+        guard let device = notif.object as? AVCaptureDevice else {
+            return
+        }
+
+        devices.append(CaptureDevice(avDevice: device))
+        NotificationCenter.default.post(name: .devicesUpdated, object: nil)
+    }
+
+    @objc
+    func deviceRemoved(notif: NSNotification) {
+        guard let device = notif.object as? AVCaptureDevice else {
+            return
+        }
+
+        let index = devices.firstIndex { (captureDevice) -> Bool in
+            captureDevice.avDevice == device
+        }
+
+        guard index != nil else {
+            return
+        }
+
+        devices.remove(at: index!)
+
+        if device.uniqueID == selectedDevice?.avDevice?.uniqueID {
+            selectedDevice = nil
+        }
+        NotificationCenter.default.post(name: .devicesUpdated, object: nil)
+    }
+}

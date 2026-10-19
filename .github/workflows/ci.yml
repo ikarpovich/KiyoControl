@@ -38,13 +38,13 @@ jobs:
         run: swiftlint lint --strict
 
       - name: Resolve Swift packages
-        run: xcodebuild -resolvePackageDependencies -project BrioControl.xcodeproj -scheme BrioControl
+        run: xcodebuild -resolvePackageDependencies -project KiyoControl.xcodeproj -scheme KiyoControl
 
       - name: Build and run unit tests
         run: >-
           xcodebuild test
-          -project BrioControl.xcodeproj
-          -scheme BrioControl
+          -project KiyoControl.xcodeproj
+          -scheme KiyoControl
           -destination 'platform=macOS,arch=arm64'
           -derivedDataPath "$RUNNER_TEMP/DerivedData"
           CODE_SIGNING_ALLOWED=NO

@@ -1,6 +1,6 @@
 //
 //  UVCErrors.swift
-//  CameraController
+//  KiyoControl
 //
 //  Created by Itay Brenner on 21/6/23.
 //  Copyright © 2023 Itaysoft. All rights reserved.
