@@ -69,6 +69,7 @@ public class UVCControl {
 
         let requestType = USBmakebmRequestType(direction: kUSBOut, type: kUSBClass, recipient: kUSBInterface)
         var payload = bytes
+        let payloadLength = UInt16(payload.count)
         return payload.withUnsafeMutableBytes { buffer in
             guard let baseAddress = buffer.baseAddress else {
                 return false
@@ -78,7 +79,7 @@ public class UVCControl {
                                           bRequest: UVCRequestCodes.setCurrent.rawValue,
                                           wValue: UInt16(uvcSelector << 8),
                                           wIndex: UInt16(uvcUnit << 8) | UInt16(uvcInterface),
-                                          wLength: UInt16(payload.count),
+                                          wLength: payloadLength,
                                           pData: baseAddress,
                                           wLenDone: 0)
             do {
