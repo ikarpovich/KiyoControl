@@ -64,11 +64,7 @@ public enum UVCControlID: Hashable, Sendable {
     case whiteBalance
     case whiteBalanceAuto
 
-    // Vendor (Logitech) XU controls.
-    case logitechFieldOfView
-    case logitechHDR
-    case logitechRightLight
-    case logitechIndicatorLed
+    // Vendor (Razer Kiyo Pro) settings are submitted as ordered raw commands.
 }
 
 /// Sendable snapshot of a UVCIntControl's discoverable, immutable-after-
@@ -164,23 +160,22 @@ public actor UVCDeviceActor {
     private var boolControls: [UVCControlID: UVCBoolControl] = [:]
     private var bitmapControls: [UVCControlID: UVCBitmapControl] = [:]
     private var multipleIntControls: [UVCControlID: UVCMultipleIntControl] = [:]
-    private var hdrControls: [UVCControlID: LogitechHDRControl] = [:]
 
     /// Strong references to the property containers solely to keep the
     /// underlying UVCControl objects alive for the actor's lifetime. The
     /// property containers are @unchecked Sendable for the same
     /// invariant: post-handoff they live only inside this actor.
     private let properties: UVCDeviceProperties
-    private let logitechBrio: LogitechBrioDeviceProperties?
+    private let razerKiyoPro: RazerKiyoProDeviceProperties?
 
     /// Construct an actor that takes ownership of every control on this
     /// device. Must be called *after* the synchronous configure() probe
     /// pass run by UVCDeviceProperties.init has completed, so that the
     /// initial snapshots are valid.
     public init(properties: UVCDeviceProperties,
-                logitechBrio: LogitechBrioDeviceProperties?) {
+                razerKiyoPro: RazerKiyoProDeviceProperties?) {
         self.properties = properties
-        self.logitechBrio = logitechBrio
+        self.razerKiyoPro = razerKiyoPro
 
         // Standard UVC controls.
         intControls[.exposurePriority] = properties.exposurePriority
@@ -210,24 +205,6 @@ public actor UVCDeviceActor {
 
         multipleIntControls[.panTiltAbsolute] = properties.panTiltAbsolute
 
-        // Vendor (Logitech) XU controls. The lazy XU-builder closures on
-        // LogitechBrioDeviceProperties issue blocking USB control
-        // transfers, so touching them here drives the same probe cost
-        // that the legacy lazy access in DeviceController used to incur.
-        if let brio = logitechBrio {
-            if let fov = brio.fieldOfView {
-                intControls[.logitechFieldOfView] = fov
-            }
-            if let rightLight = brio.rightLight {
-                intControls[.logitechRightLight] = rightLight
-            }
-            if let hdr = brio.hdr {
-                hdrControls[.logitechHDR] = hdr
-            }
-            if let led = brio.indicatorLed {
-                intControls[.logitechIndicatorLed] = led
-            }
-        }
     }
 
     // MARK: - Snapshots
@@ -238,11 +215,6 @@ public actor UVCDeviceActor {
     }
 
     public func snapshotBool(_ id: UVCControlID) -> UVCBoolControlSnapshot? {
-        if let ctl = hdrControls[id] {
-            return UVCBoolControlSnapshot(isCapable: ctl.isCapable,
-                                          defaultValue: ctl.defaultValue,
-                                          isEnabled: ctl.isEnabled)
-        }
         guard let ctl = boolControls[id] else { return nil }
         return UVCBoolControlSnapshot(ctl)
     }
@@ -268,12 +240,18 @@ public actor UVCDeviceActor {
 
     @discardableResult
     public func setBool(_ id: UVCControlID, _ value: Bool) -> Bool {
-        if let ctl = hdrControls[id] {
-            return ctl.setEnabled(value)
-        }
         guard let ctl = boolControls[id] else { return false }
         ctl.isEnabled = value
         return ctl.isEnabled
+    }
+
+    /// Applies one Kiyo Pro vendor command transaction. This actor method
+    /// keeps its multi-packet SET_CUR sequence serialized with other UVC I/O.
+    public func setKiyoProSetting(_ setting: RazerKiyoProSetting) -> Bool {
+        guard let razerKiyoPro, razerKiyoPro.isAvailable else {
+            return false
+        }
+        return razerKiyoPro.apply(setting)
     }
 
     @discardableResult
@@ -308,23 +286,9 @@ public actor UVCDeviceActor {
     }
 
     public func getBool(_ id: UVCControlID) -> Bool {
-        if let ctl = hdrControls[id] {
-            return ctl.isEnabled
-        }
         guard let ctl = boolControls[id] else { return false }
         ctl.updateEnabled()
         return ctl.isEnabled
-    }
-
-    public func getHDRPayload(_ id: UVCControlID) -> Int {
-        guard let ctl = hdrControls[id] else { return 0 }
-        return ctl.getCurrentPayload()
-    }
-
-    @discardableResult
-    public func setHDRPayload(_ id: UVCControlID, _ payload: Int) -> Int {
-        guard let ctl = hdrControls[id] else { return 0 }
-        return ctl.setPayload(payload)
     }
 
     public func getBitmapRaw(_ id: UVCControlID) -> Int {
@@ -351,9 +315,6 @@ public actor UVCDeviceActor {
 
     @discardableResult
     public func resetBool(_ id: UVCControlID) -> Bool {
-        if let ctl = hdrControls[id] {
-            return ctl.setEnabled(ctl.defaultValue)
-        }
         guard let ctl = boolControls[id] else { return false }
         ctl.isEnabled = ctl.defaultValue
         return ctl.isEnabled

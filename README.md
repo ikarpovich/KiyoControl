@@ -1,4 +1,4 @@
-<h1 align="center"> BrioControl </h1>
+<h1 align="center"> KiyoControl </h1>
 
 <!-- subtext -->
 <div align="center">
@@ -10,15 +10,15 @@ Control your cameras settings without using the software provided (or not) by th
 <!-- shields -->
 <div align="center">
     <!-- license -->
-    <a href="https://github.com/Toukaya/BrioControl/blob/master/LICENSE">
-        <img src="https://img.shields.io/github/license/Toukaya/BrioControl.svg" alt="license"/>
+    <a href="https://github.com/ikarpovich/KiyoControl/blob/master/LICENSE">
+        <img src="https://img.shields.io/github/license/ikarpovich/KiyoControl.svg" alt="license"/>
     </a>
     <!-- platform -->
-    <a href="https://github.com/Toukaya/BrioControl">
+    <a href="https://github.com/ikarpovich/KiyoControl">
         <img src="https://img.shields.io/badge/platform-macOS%2026%2B-lightgrey.svg" alt="platform"/>
     </a>
     <!-- swift version -->
-    <a href="https://github.com/Toukaya/BrioControl">
+    <a href="https://github.com/ikarpovich/KiyoControl">
         <img src="https://img.shields.io/badge/swift-6-orange.svg" alt="swift 6"/>
     </a>
     <!-- upstream -->
@@ -29,14 +29,9 @@ Control your cameras settings without using the software provided (or not) by th
 
 <br/>
 
-<div align="center">
-    <img src="./.github/Basic.png" width="299" alt="basic screenshot"/>
-    <img src="./.github/Preferences.png" width="299" alt="preferences screenshot"/>
-</div>
-
 ## About this fork
 
-BrioControl is a fork of [itaybre/CameraController](https://github.com/itaybre/CameraController) re-targeted at Apple Silicon, macOS 26 (Tahoe), Swift 6, and the Liquid Glass design language, with first-class support for the Logitech BRIO's vendor extension units. It remains under GPL v3, the same license as the upstream project. BrioControl is not affiliated with, endorsed by, or sponsored by Logitech; "BRIO" is a trademark of Logitech Inc.
+KiyoControl is a fork of [itaybre/CameraController](https://github.com/itaybre/CameraController) re-targeted at Apple Silicon, macOS 26 (Tahoe), Swift 6, and the Liquid Glass design language, with first-class support for the Razer Kiyo Pro vendor controls. It remains under GPL v3, the same license as the upstream project. KiyoControl is not affiliated with, endorsed by, or sponsored by Razer.
 
 ### What changed since the fork point
 
@@ -58,19 +53,22 @@ BrioControl is a fork of [itaybre/CameraController](https://github.com/itaybre/C
 - **Profile row uses an ellipsis Menu** (Apply / Delete) instead of hover-revealed icons; profile list is a fixed-height `List` so popover height stays stable.
 - **Slider step granularity.** New `tickStep = max(resolution, span / 10)` on `NumberCaptureDeviceProperty` and `MultipleCaptureDeviceProperty` so sliders snap to ~10 detents instead of single-unit precision over hundreds-wide ranges.
 
-#### Logitech BRIO vendor controls
-- **Field of View** picker (90° / 78° / 65°), wired through XU 6 / selector 0x03.
-- **HDR toggle.** Confirmed via USB capture from Logi Tune: XU GUID `5A6D654C-7E35-4D4E-810D-069D15E0F79B`, selector `0x01`, 6-byte payload where `byte[0]` toggles HDR while `bytes[1..5]` are vendor companion data preserved on every write. Implemented as a `LogitechHDRControl` subclass that does a read-modify-write so the trailing bytes never get clobbered.
-- **VC Extension Unit descriptor parser.** Independent second pass over the configuration descriptor that catalogs every Extension Unit (GUID + bmControls) for diagnostics and selector probing; defensive against zero-length descriptors and non-VC interfaces.
-- RightLight UI was prototyped, then removed pending vendor protocol confirmation; the XU plumbing remains in place.
+#### Razer Kiyo Pro vendor controls
+- Autofocus mode: Responsive and Passive.
+- HDR on/off and Dark/Bright HDR mode.
+- Field of View: Wide, Medium, and Narrow.
+- Vendor protocol: sends eight-byte ISP commands through the Kiyo Pro extension unit (GUID 23e49ed0-1178-4f31-ae52-d2fb8a8d3b48), including the required setup commands for Medium/Narrow FoV and the save command.
+- Command values follow the public [kiyoproctrls-mac](https://github.com/johnteslade/kiyoproctrls-mac) utility and its [Linux predecessor](https://github.com/soyersoyer/kiyoproctrls).
+- Readback limitation: the camera does not report these values through the available GET request. The UI starts each control as Not set and shows values applied successfully during the current session.
+- VC Extension Unit descriptor parsing is kept as an independent pass so the Kiyo unit ID is discovered instead of hard-coded.
 
 #### Project hygiene
-- **Renamed `CameraController` → `BrioControl`** (Xcode project, target, scheme, source/test directories, bundle identifiers `com.toukaya.BrioControl{,.Helper}`, Info.plist `CFBundleDisplayName`).
+- **Renamed `CameraController` → `KiyoControl`** (Xcode project, target, scheme, source/test directories, bundle identifiers `me.karpovich.KiyoControl{,.Helper}`, Info.plist `CFBundleDisplayName`).
 - **Xcode 26 project-format upgrade**, predictable PBX file IDs replaced with random 24-hex IDs, swiftlint complexity / function-body-length violations resolved structurally (helper extraction in `IOUSBConfigurationDescriptorPtr+UVC.swift`, `Snapshots` struct in `DeviceController.swift`).
 
 ## Building from source
 
-BrioControl is currently source-only — there are no published binaries, no signed release `.zip`, and no Homebrew cask. Build it locally with:
+KiyoControl is currently source-only — there are no published binaries, no signed release `.zip`, and no Homebrew cask. Build it locally with:
 
 ### Required
 
@@ -79,12 +77,12 @@ BrioControl is currently source-only — there are no published binaries, no sig
 - [SwiftLint](https://github.com/realm/SwiftLint) (used as a Run Script build phase)
 
 ```sh
-git clone https://github.com/Toukaya/BrioControl.git
-cd BrioControl
-xcodebuild -scheme BrioControl -configuration Release build
+git clone https://github.com/ikarpovich/KiyoControl.git
+cd KiyoControl
+xcodebuild -scheme KiyoControl -configuration Release build
 ```
 
-Or open `BrioControl.xcodeproj` in Xcode and run.
+Or open `KiyoControl.xcodeproj` in Xcode and run.
 
 ## FAQ
 
@@ -93,9 +91,9 @@ Or open `BrioControl.xcodeproj` in Xcode and run.
 
 ## Support
 - **macOS 26 (Tahoe)** only. The deployment target is `26.0` so the codebase can use Swift 6 strict concurrency, the Observation framework, the macOS 26 Liquid Glass APIs (`GlassEffectContainer`, `.glassEffect()`), `SMAppService`, and the modern `MenuBarExtra` / `NSPopover` chrome unconditionally.
-- Works with any camera controllable via [UVC](https://www.usb.org/document-library/video-class-v15-document-set), with first-class support for Logitech BRIO vendor extension units (Field of View, HDR).
+- Works with any camera controllable via [UVC](https://www.usb.org/document-library/video-class-v15-document-set), with Razer Kiyo Pro autofocus mode, HDR, HDR mode, and Field of View controls.
 
 ## Contributors
-- [@Toukaya](https://github.com/Toukaya) (BrioControl fork maintainer)
+- [@ikarpovich](https://github.com/ikarpovich) (KiyoControl fork maintainer)
 - [@itaybre](https://github.com/itaybre) (upstream CameraController author)
 - Icons by [@herrerajeff](https://github.com/herrerajeff)

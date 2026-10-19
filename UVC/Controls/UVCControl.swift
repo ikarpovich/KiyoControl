@@ -1,6 +1,6 @@
 //
 //  UVCControl.swift
-//  CameraController
+//  KiyoControl
 //
 //  Created by Itay Brenner on 7/20/20.
 //  Copyright © 2020 Itaysoft. All rights reserved.
@@ -57,6 +57,40 @@ public class UVCControl {
         }
     }
 
+    /// Sends an arbitrary UVC SET_CUR payload. Some vendor extension units
+    /// use structured payloads that cannot be represented by the integer
+    /// controls above.
+    func setData(bytes: [UInt8]) -> Bool {
+        guard uvcUnit >= 0,
+              !bytes.isEmpty,
+              bytes.count <= Int(UInt16.max) else {
+            return false
+        }
+
+        let requestType = USBmakebmRequestType(direction: kUSBOut, type: kUSBClass, recipient: kUSBInterface)
+        var payload = bytes
+        let payloadLength = UInt16(payload.count)
+        return payload.withUnsafeMutableBytes { buffer in
+            guard let baseAddress = buffer.baseAddress else {
+                return false
+            }
+
+            var request = IOUSBDevRequest(bmRequestType: requestType,
+                                          bRequest: UVCRequestCodes.setCurrent.rawValue,
+                                          wValue: UInt16(uvcSelector << 8),
+                                          wIndex: UInt16(uvcUnit << 8) | UInt16(uvcInterface),
+                                          wLength: payloadLength,
+                                          pData: baseAddress,
+                                          wLenDone: 0)
+            do {
+                try submit(&request)
+                return true
+            } catch {
+                return false
+            }
+        }
+    }
+
     func updateIsCapable() {
         isCapable = getDataFor(type: UVCRequestCodes.getInfo, length: 1) != 0
     }
@@ -79,21 +113,27 @@ public class UVCControl {
                                           wLength: UInt16(length),
                                           pData: value,
                                           wLenDone: 0)
-            if #available(macOS 12.0, *) {
-                guard
-                    interface.pointee.pointee.ControlRequest(interface, 0, &request) == kIOReturnSuccess else {
-                    throw UVCError.requestError
-                }
-            } else {
-                guard
-                    interface.pointee.pointee.USBInterfaceOpenSeize(interface) == kIOReturnSuccess,
-                    interface.pointee.pointee.ControlRequest(interface, 0, &request) == kIOReturnSuccess,
-                    interface.pointee.pointee.USBInterfaceClose(interface) == kIOReturnSuccess else {
-                    throw UVCError.requestError
-                }
-            }
+            try submit(&request)
         })
         return value
+    }
+
+    private func submit(_ request: inout IOUSBDevRequest) throws {
+        if #available(macOS 12.0, *) {
+            guard interface.pointee.pointee.ControlRequest(interface, 0, &request) == kIOReturnSuccess else {
+                throw UVCError.requestError
+            }
+            return
+        }
+
+        guard interface.pointee.pointee.USBInterfaceOpenSeize(interface) == kIOReturnSuccess else {
+            throw UVCError.requestError
+        }
+        defer { _ = interface.pointee.pointee.USBInterfaceClose(interface) }
+
+        guard interface.pointee.pointee.ControlRequest(interface, 0, &request) == kIOReturnSuccess else {
+            throw UVCError.requestError
+        }
     }
 
     private func USBmakebmRequestType(direction: Int, type: Int, recipient: Int) -> UInt8 {

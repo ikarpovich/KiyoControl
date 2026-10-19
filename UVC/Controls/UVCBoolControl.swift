@@ -1,6 +1,6 @@
 //
 //  UVCBoolControl.swift
-//  CameraController
+//  KiyoControl
 //
 //  Created by Itay Brenner on 7/21/20.
 //  Copyright © 2020 Itaysoft. All rights reserved.

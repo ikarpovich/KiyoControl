@@ -10,7 +10,7 @@ import Cocoa
 import SwiftUI
 
 enum HelperConstants {
-    static let BundleIdentifier = "com.toukaya.BrioControl"
+    static let BundleIdentifier = "me.karpovich.KiyoControl"
 }
 
 @main
