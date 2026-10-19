@@ -177,6 +177,24 @@ final class PreviewSession {
         await startSessionOffMain()
     }
 
+    // Re-negotiate the current capture format after a Kiyo HDR setting
+    // changes. Keep the AVCaptureDeviceInput and preview layer installed;
+    // replacing the input is unnecessary for a frame-rate change.
+    func reconfigureHDR(deviceID: String, enabled: Bool) async {
+        guard let device = currentDevice, device.uniqueID == deviceID else {
+            return
+        }
+        currentHDREnabled = enabled
+
+        guard let quality = currentQuality, quality != .disabled else {
+            return
+        }
+
+        await stopSessionOffMain()
+        applyFormat(on: device, quality: quality, hdrEnabled: enabled)
+        await startSessionOffMain()
+    }
+
     // Suspend the running session without dropping the configured
     // device. Used when the SwiftUI scenePhase leaves .active so the
     // camera LED turns off while the menu-bar popover is hidden.
@@ -265,7 +283,7 @@ final class PreviewSession {
             let dims = CMVideoFormatDescriptionGetDimensions(format.formatDescription)
             if dims.width == targetWidth && dims.height == targetHeight {
                 if exactMatch == nil ||
-                    prefersFormat(format, over: exactMatch!, hdrEnabled: hdrEnabled) {
+                    bestFps(in: format) > bestFps(in: exactMatch!) {
                     exactMatch = format
                 }
             } else if dims.width <= targetWidth && dims.height <= targetHeight {
@@ -296,14 +314,10 @@ final class PreviewSession {
         // Use the device-reported AVFrameRateRange.minFrameDuration
         // directly. Constructing CMTime(value: 1, timescale: fps)
         // ourselves drifts off the supported ranges some webcams
-        // (webcams included) advertise (e.g. 60.00024 fps), and
+        // advertise (the Kiyo reports 30.00003 fps), and
         // setting that drifted value raises NSInvalidArgumentException
         // which Swift cannot catch.
-        if hdrEnabled, supports(preferredFps, in: chosen) {
-            let duration = CMTime(value: 1, timescale: CMTimeScale(Int32(preferredFps)))
-            device.activeVideoMinFrameDuration = duration
-            device.activeVideoMaxFrameDuration = duration
-        } else if let range = pickFrameRateRange(in: chosen, preferredFps: preferredFps) {
+        if let range = pickFrameRateRange(in: chosen, preferredFps: preferredFps) {
             device.activeVideoMinFrameDuration = range.minFrameDuration
             device.activeVideoMaxFrameDuration = range.minFrameDuration
         }
@@ -336,20 +350,6 @@ final class PreviewSession {
             maxFps = range.maxFrameRate
         }
         return maxFps
-    }
-
-    private func supports(_ fps: Double, in format: AVCaptureDevice.Format) -> Bool {
-        format.videoSupportedFrameRateRanges.contains {
-            $0.minFrameRate <= fps + 0.5 && $0.maxFrameRate >= fps - 0.5
-        }
-    }
-
-    private func prefersFormat(_ candidate: AVCaptureDevice.Format,
-                               over current: AVCaptureDevice.Format,
-                               hdrEnabled: Bool) -> Bool {
-        let candidateFps = bestFps(in: candidate)
-        let currentFps = bestFps(in: current)
-        return hdrEnabled ? candidateFps < currentFps : candidateFps > currentFps
     }
 
     // MARK: - Off-main lifecycle helpers
