@@ -1,0 +1,49 @@
+name: macOS CI
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build and test (macOS 26)
+    runs-on: macos-26
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Verify Xcode 26 toolchain
+        run: |
+          xcodebuild -version
+          xcodebuild -version | sed -n 's/^Xcode \([0-9]*\).*/\1/p' | grep -E '^2[6-9]$'
+          xcrun --sdk macosx --show-sdk-version
+
+      - name: Install SwiftLint
+        run: brew install swiftlint
+
+      - name: Lint Swift sources
+        run: swiftlint lint --strict
+
+      - name: Resolve Swift packages
+        run: xcodebuild -resolvePackageDependencies -project BrioControl.xcodeproj -scheme BrioControl
+
+      - name: Build and run unit tests
+        run: >-
+          xcodebuild test
+          -project BrioControl.xcodeproj
+          -scheme BrioControl
+          -destination 'platform=macOS,arch=arm64'
+          -derivedDataPath "$RUNNER_TEMP/DerivedData"
+          CODE_SIGNING_ALLOWED=NO
