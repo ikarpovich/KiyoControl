@@ -8,6 +8,7 @@
 
 import SwiftUI
 import AVFoundation
+import UVC
 
 struct ContentView: View {
     @Environment(DevicesManager.self) private var manager
@@ -40,7 +41,7 @@ struct ContentView: View {
         // runs this one, so a rapid sequence of switches collapses
         // to "detach prior, attach latest" with the intermediate
         // attaches superseded.
-        .task(id: previewConfigurationToken) {
+        .task(id: manager.selectedDevice?.avDevice?.uniqueID) {
             if let device = manager.selectedDevice?.avDevice {
                 await preview.attach(device: device,
                                      quality: settings.cameraPreviewQuality,
@@ -49,22 +50,30 @@ struct ContentView: View {
                 await preview.detach()
             }
         }
+        .onChange(of: selectedCameraHDREnabled) { _, enabled in
+            reconfigurePreviewForHDR(enabled: enabled)
+        }
+        .onChange(of: selectedCameraHDRMode) { _, _ in
+            guard selectedCameraHDREnabled else { return }
+            reconfigurePreviewForHDR(enabled: true)
+        }
         .frame(width: settings.cameraPreviewSize.getWidth())
         .fixedSize(horizontal: true, vertical: false)
     }
 
-    // HDR is session state on the Kiyo Pro: changing HDR or its exposure
-    // mode must restart the preview, and HDR requires a 30 fps capture.
-    private var previewConfigurationToken: String {
-        let deviceID = manager.selectedDevice?.avDevice?.uniqueID ?? "none"
-        let hdr = manager.selectedDevice?.controller?.kiyoProSettings?.hdrEnabled
-            .map { $0 ? "on" : "off" } ?? "unset"
-        let mode = manager.selectedDevice?.controller?.kiyoProSettings?.hdrMode?.rawValue ?? "unset"
-        return "\(deviceID)|\(hdr)|\(mode)"
-    }
-
     private var selectedCameraHDREnabled: Bool {
         manager.selectedDevice?.controller?.kiyoProSettings?.hdrEnabled == true
+    }
+
+    private var selectedCameraHDRMode: KiyoProHDRMode? {
+        manager.selectedDevice?.controller?.kiyoProSettings?.hdrMode
+    }
+
+    private func reconfigurePreviewForHDR(enabled: Bool) {
+        guard let deviceID = manager.selectedDevice?.avDevice?.uniqueID else { return }
+        Task {
+            await preview.reconfigureHDR(deviceID: deviceID, enabled: enabled)
+        }
     }
 
     @ViewBuilder
