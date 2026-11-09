@@ -22,8 +22,8 @@ Control your cameras settings without using the software provided (or not) by th
         <img src="https://img.shields.io/badge/swift-6-orange.svg" alt="swift 6"/>
     </a>
     <!-- upstream -->
-    <a href="https://github.com/itaybre/CameraController">
-        <img src="https://img.shields.io/badge/forked%20from-itaybre%2FCameraController-blue.svg" alt="forked from itaybre/CameraController"/>
+    <a href="https://github.com/Toukaya/BrioControl">
+        <img src="https://img.shields.io/badge/forked%20from-Toukaya%2FBrioControl-blue.svg" alt="forked from Toukaya/BrioControl"/>
     </a>
 </div>
 
@@ -31,7 +31,7 @@ Control your cameras settings without using the software provided (or not) by th
 
 ## About this fork
 
-KiyoControl is a fork of [itaybre/CameraController](https://github.com/itaybre/CameraController) re-targeted at Apple Silicon, macOS 26 (Tahoe), Swift 6, and the Liquid Glass design language, with first-class support for the Razer Kiyo Pro vendor controls. It remains under GPL v3, the same license as the upstream project. KiyoControl is not affiliated with, endorsed by, or sponsored by Razer.
+KiyoControl is a fork of [Toukaya/BrioControl](https://github.com/Toukaya/BrioControl), which is itself a fork of [itaybre/CameraController](https://github.com/itaybre/CameraController). KiyoControl builds on BrioControl's Apple Silicon support, macOS 26 (Tahoe), Swift 6, and Liquid Glass updates, replacing its Logitech BRIO-specific controls with first-class support for Razer Kiyo Pro vendor controls. It continues under GPL v3, the license used by both upstream projects. KiyoControl is not affiliated with, endorsed by, or sponsored by Razer.
 
 ### What changed since the fork point
 
@@ -95,5 +95,6 @@ Or open `KiyoControl.xcodeproj` in Xcode and run.
 
 ## Contributors
 - [@ikarpovich](https://github.com/ikarpovich) (KiyoControl fork maintainer)
-- [@itaybre](https://github.com/itaybre) (upstream CameraController author)
+- [@Toukaya](https://github.com/Toukaya) (BrioControl maintainer and immediate upstream)
+- [@itaybre](https://github.com/itaybre) (original CameraController author)
 - Icons by [@herrerajeff](https://github.com/herrerajeff)
